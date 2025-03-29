@@ -128,3 +128,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Locally installed postgres db data from docker
+db/
+
+cookies.json
