@@ -14,6 +14,7 @@ RUN chown -R app-user:app-user $HOME
 USER app-user
 # Make `npm install` faster by skipping 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV BROWSER_WS_ENDPOINT=$BROWSER_WS_ENDPOINT
 RUN npm install
 # expose port 7700 
 EXPOSE 7700
