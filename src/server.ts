@@ -291,31 +291,13 @@ interface ScrapeResponse {
 // Scraping function with optional pagination
 // ------------------------
 
-let additionalLaunchArgs: LaunchOptions = {};
-const IS_RPI = process.env.ARCH_TYPE === 'rpi';
-if (IS_RPI) {
-  console.log('Running on Raspberry Pi. Ensure that Puppeteer is configured correctly.');
-  // Additional launch arguments for Raspberry Pi.
-  additionalLaunchArgs = {
-    executablePath: '/usr/bin/chromium', // Use the system-installed Chromium.
-    args: [
-      '--no-sandbox', // Disable sandboxing for compatibility.
-      // '--disable-gpu', // Disable GPU hardware acceleration.
-      // '--disable-dev-shm-usage', // Overcome limited /dev/shm size on Raspberry Pi.
-      // '--disable-setuid-sandbox', // Disable setuid sandboxing.
-    ],
-  };
-  console.log('Puppeteer launch arguments for Raspberry Pi:', additionalLaunchArgs);
-} else {
-  console.log('Running on a non-Raspberry Pi environment. Using default Puppeteer settings.');
-}
+
+console.log('Browser WebSocket Endpoint:', process.env.BROWSER_WS_ENDPOINT);
 
 const scrapeLegacySite = async (search: string, USERNAME, PASSWORD = '', targetPage: number = 1): Promise<ScrapeResponse> => {
   console.log(`Starting scrape for search term: ${search} on page ${targetPage}`);
-  const browser = await puppeteer.launch({
-    headless: true,
+  const browser = await puppeteer.connect({
     browserWSEndpoint: process.env.BROWSER_WS_ENDPOINT,
-    ...additionalLaunchArgs, // Include additional launch arguments for Raspberry Pi if applicable.
   });
   const page = await browser.newPage();
 
