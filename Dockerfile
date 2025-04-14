@@ -16,6 +16,8 @@ RUN chown -R app-user:app-user $HOME
 USER app-user
 # Make `npm install` faster by skipping 
 # downloading default Chromium (discussed in Problem 1)
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV ARCH_TYPE=rpi
 RUN npm install
 # expose port 7700 
 EXPOSE 7700
