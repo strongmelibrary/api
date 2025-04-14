@@ -314,6 +314,7 @@ const scrapeLegacySite = async (search: string, USERNAME, PASSWORD = '', targetP
   console.log(`Starting scrape for search term: ${search} on page ${targetPage}`);
   const browser = await puppeteer.launch({
     headless: true,
+    browserWSEndpoint: process.env.BROWSER_WS_ENDPOINT,
     ...additionalLaunchArgs, // Include additional launch arguments for Raspberry Pi if applicable.
   });
   const page = await browser.newPage();
