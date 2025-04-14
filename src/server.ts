@@ -1,4 +1,7 @@
+// import puppeteer from 'puppeteer-extra';
+// import { ElementHandle, LaunchOptions, Page } from 'puppeteer';
 import puppeteer, { ElementHandle, LaunchOptions, Page } from 'puppeteer';
+// import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
@@ -8,6 +11,9 @@ dotenv.config(); // Load environment variables from .env file
 const COOKIE_PATH = __dirname;
 const LEGACY_SITE_URL = process.env.LEGACY_SITE_URL || 'http://example.com'; // Replace with the actual URL of the legacy site
 const LOGIN_URL = `${LEGACY_SITE_URL}/index.php`;
+
+// make sure Cloudflare is not blocking us
+// puppeteer.use(StealthPlugin())
 
 // ------------------------
 // Helper functions
@@ -298,6 +304,7 @@ const scrapeLegacySite = async (search: string, USERNAME, PASSWORD = '', targetP
   console.log(`Starting scrape for search term: ${search} on page ${targetPage}`);
   const browser = await puppeteer.connect({
     browserWSEndpoint: process.env.BROWSER_WS_ENDPOINT,
+    acceptInsecureCerts: true,
   });
   const page = await browser.newPage();
 
