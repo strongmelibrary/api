@@ -133,3 +133,4 @@ dist
 db/
 
 cookies.json
+cookies.*.json
