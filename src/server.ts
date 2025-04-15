@@ -93,39 +93,50 @@ const saveCookies = async (page: Page, username: string, password?: string): Pro
 
 // Perform login only if necessary.
 const performLoginIfNeeded = async (page: Page, USERNAME: string, PASSWORD?: string): Promise<void> => {
-  // Navigate to the site so we can check if we’re already logged in.
+  // Navigate to legacy site to check current login state.
   await page.goto(LEGACY_SITE_URL, { waitUntil: 'networkidle2' });
 
-  // Check for an element that indicates the user is logged in (e.g., a logout button)
   const isLoggedIn = await safePageEvaluate(page, () => {
-    // look for an h4 with content "Login to the Library" to confirm we are not logged in.
     const loginHeader = document.querySelector('h4')?.textContent?.trim();
     if (loginHeader === 'Login to the Library') {
       console.log('Not logged in, proceeding to login.');
-      return false; // Not logged in
+      return false;
     }
     console.log('Already logged in, no need to login again.');
     return true;
   });
 
   if (!isLoggedIn) {
-    // Navigate to login page.
-    await page.goto(LOGIN_URL, { waitUntil: 'networkidle2' });
+    console.log('Logging in...');
+    // Load login page.
+    // await page.goto(LOGIN_URL, { waitUntil: 'networkidle2' });
 
-    console.log(`Performing login for user: ${USERNAME} with password: ${(PASSWORD && PASSWORD?.length) ? 'provided' : 'not provided'}`);
-    // Fill in login credentials.
+    console.log(`Performing login for user: ${USERNAME} with password: ${(PASSWORD && PASSWORD.length) ? 'provided' : 'not provided'}`);
+    // Fill in credentials.
     await page.type('#libraryname', USERNAME);
     await page.type('#password', PASSWORD || '');
+    
+    // Click the login button.
+    console.log('Clicking login button...');
+    await page.click('button[type="submit"]');
 
-    await page.click('.btn.btn-primary.w-100');
+    // Instead of waitForNavigation, wait for a post-login element.
+    try {
+      // For example, wait for an element that only appears after login such as a logout button.
+      await page.waitForSelector('img[alt="Profile"]', { timeout: 60000 });
+      console.log('Login successful, post-login element found.');
+    } catch (error) {
+      console.error('Login seems to have failed; post-login selector did not appear in time.');
+      throw error;
+    }
 
-    // Wait for the navigation to complete.
-    await page.waitForNavigation({ waitUntil: 'networkidle2' });
-
-    // Save cookies for later reuse.
+    // Save cookies for subsequent sessions.
+    console.log('Saving cookies...');
     await saveCookies(page, USERNAME, PASSWORD);
+    console.log('Cookies saved successfully.');
   }
 };
+
 
 // ------------------------
 // BookInfo interface and extraction
@@ -305,6 +316,7 @@ const scrapeLegacySite = async (search: string, USERNAME, PASSWORD = '', targetP
   const browser = await puppeteer.connect({
     browserWSEndpoint: process.env.BROWSER_WS_ENDPOINT,
     acceptInsecureCerts: true,
+    protocolTimeout: 120000,
   });
   const page = await browser.newPage();
 
@@ -315,14 +327,20 @@ const scrapeLegacySite = async (search: string, USERNAME, PASSWORD = '', targetP
   await performLoginIfNeeded(page, USERNAME, PASSWORD);
 
   // Navigate to the home page after login.
+  console.log('Navigating to home page...');
   await page.goto(`${LEGACY_SITE_URL}/home.php`, { waitUntil: 'networkidle2' });
 
   // Perform search.
-  await page.waitForSelector('input[id="search\\ term"]');
-  await page.type('input[id="search\\ term"]', search);
+  console.log(`Searching for term: ${search}`);
+  await page.waitForSelector('input[name="term"]');
+  await page.type('input[name="term"]', search);
   await page.click('button[id="search"]');
   try {
-    await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 });
+    console.log('Waiting for navigation after search...');
+    // <a href="standard.php?display=Item" class="btn btn-outline-primary btn-sm">Item</a>
+    // look for the above
+    await page.waitForSelector('a[href="standard.php?display=Item"]', { timeout: 60000 });
+    console.log('Navigation after search successful.');
   } catch(e) {
     // If navigation fails, we might be on the same page without a full reload.
     console.warn('Navigation after search failed.');
