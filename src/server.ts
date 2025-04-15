@@ -437,6 +437,11 @@ app.get('/api/scrape', async (req, res) => {
   }
 });
 
+// add health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
