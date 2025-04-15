@@ -15,6 +15,7 @@ USER app-user
 # Make `npm install` faster by skipping 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV BROWSER_WS_ENDPOINT=$BROWSER_WS_ENDPOINT
+ENV LEGACY_SITE_URL=$LEGACY_SITE_URL
 RUN npm install
 # expose port 7700 
 EXPOSE 7700
