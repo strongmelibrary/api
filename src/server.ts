@@ -340,7 +340,7 @@ const scrapeLegacySite = async (search: string, USERNAME, PASSWORD = '', targetP
     console.log('Waiting for navigation after search...');
     // <a href="standard.php?display=Item" class="btn btn-outline-primary btn-sm">Item</a>
     // look for the above
-    await page.waitForSelector('a[href="standard.php?display=Item"]', { timeout: 60000 });
+    await page.waitForSelector('a[href="standard.php?display=Item"]', { timeout: 5000 });
     console.log('Navigation after search successful.');
   } catch(e) {
     // if waiting for that selector fails, we could just have no results. look for an item with the inner text "No records to display"
