@@ -343,6 +343,13 @@ const scrapeLegacySite = async (search: string, USERNAME, PASSWORD = '', targetP
     await page.waitForSelector('a[href="standard.php?display=Item"]', { timeout: 60000 });
     console.log('Navigation after search successful.');
   } catch(e) {
+    // if waiting for that selector fails, we could just have no results. look for an item with the inner text "No records to display"
+    const noResultsEl = await page.$('center:contains("No records to display")');
+    if (noResultsEl) {
+      console.log('No results found for the search term.');
+      return { meta: { currentPage: 1, pageSize: 0, totalResults: 0, totalPages: 0 }, results: [] };
+    }
+
     // If navigation fails, we might be on the same page without a full reload.
     console.warn('Navigation after search failed.');
     console.log('Current URL:', page.url());
