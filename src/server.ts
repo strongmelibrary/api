@@ -5,6 +5,7 @@ import puppeteer, { ElementHandle, LaunchOptions, Page } from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
+import cors from 'cors'; // Import the cors middleware
 import dotenv from 'dotenv';
 dotenv.config(); // Load environment variables from .env file
 
@@ -410,6 +411,9 @@ const scrapeLegacySite = async (search: string, USERNAME, PASSWORD = '', targetP
 
 const app = express();
 const PORT = process.env.PORT || 7700;
+
+// Enable CORS for all origins
+app.use(cors());
 
 app.get('/api/scrape', async (req, res) => {
   const searchQuery = req.query.search;

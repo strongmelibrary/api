@@ -1,0 +1,242 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Legacy Library Scraper API",
+    "version": "1.0.0",
+    "description": "API for scraping search results from a legacy library website."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:{PORT}",
+      "description": "Local development server",
+      "variables": {
+        "PORT": {
+          "default": "7700",
+          "description": "Port number for the server"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Returns the operational status of the server.",
+        "responses": {
+          "200": {
+            "description": "Server is operational",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scrape": {
+      "get": {
+        "summary": "Scrape Legacy Library Site",
+        "description": "Performs a search on the legacy library site and returns the results. Requires authentication credentials.",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": true,
+            "description": "The search term to use on the legacy site.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "description": "The username for logging into the legacy site.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": false,
+            "description": "The password for logging into the legacy site (optional).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The page number of the search results to retrieve (defaults to 1).",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful scrape operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScrapeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Missing required query parameters (search or username).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Search query is required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - Scraping failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Scraping failed"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BookInfo": {
+        "type": "object",
+        "properties": {
+          "bookJacketUrl": {
+            "type": "string",
+            "format": "url",
+            "nullable": true,
+            "description": "URL of the book jacket image."
+          },
+          "googlePreviewUrl": {
+            "type": "string",
+            "format": "url",
+            "nullable": true,
+            "description": "URL to the Google Books preview, if available."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the book."
+          },
+          "expandedAuthor": {
+            "type": "string",
+            "description": "Author information as displayed alongside the title."
+          },
+          "author": {
+            "type": "string",
+            "nullable": true,
+            "description": "Extracted author name, if available as a separate field."
+          },
+          "extraFields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "A key-value map of additional fields extracted for the book (e.g., Publisher, ISBN)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description or summary of the book."
+          },
+          "availability": {
+            "type": "string",
+            "description": "Availability status of the book (e.g., \"Available\", \"Checked Out\")."
+          },
+          "copies": {
+            "type": "integer",
+            "description": "Number of copies available or listed."
+          }
+        },
+        "required": [
+          "title",
+          "expandedAuthor",
+          "extraFields",
+          "description",
+          "availability",
+          "copies"
+        ]
+      },
+      "PageMeta": {
+        "type": "object",
+        "properties": {
+          "currentPage": {
+            "type": "integer",
+            "description": "The current page number being displayed."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "The number of results per page."
+          },
+          "totalResults": {
+            "type": "integer",
+            "description": "The total number of results found for the search query."
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "The total number of pages available for the search results."
+          }
+        },
+        "required": [
+          "currentPage",
+          "pageSize",
+          "totalResults",
+          "totalPages"
+        ]
+      },
+      "ScrapeResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookInfo"
+            }
+          }
+        },
+        "required": [
+          "meta",
+          "results"
+        ]
+      }
+    }
+  }
+}
