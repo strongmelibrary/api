@@ -344,7 +344,9 @@ const scrapeLegacySite = async (search: string, USERNAME, PASSWORD = '', targetP
     console.log('Navigation after search successful.');
   } catch(e) {
     // if waiting for that selector fails, we could just have no results. look for an item with the inner text "No records to display"
-    const noResultsEl = await page.$('center:contains("No records to display")');
+    // const noResultsEl = await page.$('center:contains("No records to display")');
+    // select all <center> tags, and check the inner text of each one, if any of them contain "No records to display", then we have no results.
+    const noResultsEl = await page.$$eval('center', centers => centers.some((center) => (center as HTMLElement).innerText.includes('No records to display')));
     if (noResultsEl) {
       console.log('No results found for the search term.');
       return { meta: { currentPage: 1, pageSize: 0, totalResults: 0, totalPages: 0 }, results: [] };
