@@ -134,3 +134,6 @@ db/
 
 cookies.json
 cookies.*.json
+*.json
+
+debug/

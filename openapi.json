@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Legacy Library Scraper API",
-    "version": "1.0.0",
-    "description": "API for scraping search results from a legacy library website."
+    "title": "Library Media Search API",
+    "version": "2.0.0",
+    "description": "API for searching both physical and digital media from library sources."
   },
   "servers": [
     {
@@ -33,6 +33,19 @@
                     "status": {
                       "type": "string",
                       "example": "ok"
+                    },
+                    "services": {
+                      "type": "object",
+                      "properties": {
+                        "legacy": {
+                          "type": "boolean",
+                          "description": "Whether the legacy service is available"
+                        },
+                        "ycl": {
+                          "type": "boolean",
+                          "description": "Whether the YCL digital service is available"
+                        }
+                      }
                     }
                   }
                 }
@@ -44,8 +57,8 @@
     },
     "/api/scrape": {
       "get": {
-        "summary": "Scrape Legacy Library Site",
-        "description": "Performs a search on the legacy library site and returns the results. Requires authentication credentials.",
+        "summary": "Scrape Legacy Library Site (Legacy Endpoint)",
+        "description": "Performs a search on the legacy library site and returns the results. Requires authentication credentials. This endpoint is maintained for backward compatibility.",
         "parameters": [
           {
             "name": "search",
@@ -131,6 +144,170 @@
           }
         }
       }
+    },
+    "/api/search": {
+      "get": {
+        "summary": "Combined Media Search",
+        "description": "Performs a search across both physical and digital media sources and returns combined results. Supports filtering, sorting, and pagination.",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": true,
+            "description": "The search term to use for both sources.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "description": "The username for authentication.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": false,
+            "description": "The password for authentication (optional).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "librarySlug",
+            "in": "query",
+            "required": false,
+            "description": "The library identifier for digital assets. If omitted, only physical media will be searched.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The page number of the search results to retrieve.",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "The number of results per page.",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "mediaType",
+            "in": "query",
+            "required": false,
+            "description": "Filter results by media type.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "physical",
+                "digital",
+                "combined"
+              ],
+              "default": "combined"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "required": false,
+            "description": "Sort order for results.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "availability",
+                "title",
+                "author",
+                "date"
+              ],
+              "default": "relevance"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": false,
+            "description": "API response version.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "v1",
+                "v2"
+              ],
+              "default": "v2"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful search operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ScrapeResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SearchResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Missing required parameters or invalid parameter values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Search query is required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - Search failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Search failed"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -181,6 +358,13 @@
           "copies": {
             "type": "integer",
             "description": "Number of copies available or listed."
+          },
+          "mediaType": {
+            "type": "string",
+            "description": "Type of media (only present in v1 responses for digital items).",
+            "enum": [
+              "digital"
+            ]
           }
         },
         "required": [
@@ -229,6 +413,144 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BookInfo"
+            }
+          }
+        },
+        "required": [
+          "meta",
+          "results"
+        ]
+      },
+      "UnifiedResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the result."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the media item."
+          },
+          "author": {
+            "type": "string",
+            "description": "Author of the media item."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description or summary of the media item."
+          },
+          "mediaType": {
+            "type": "string",
+            "enum": [
+              "physical",
+              "digital"
+            ],
+            "description": "Type of media (physical or digital)."
+          },
+          "imageUrl": {
+            "type": "string",
+            "format": "url",
+            "nullable": true,
+            "description": "URL of the media item image."
+          },
+          "availability": {
+            "type": "string",
+            "description": "Availability status of the media item."
+          },
+          "copies": {
+            "type": "integer",
+            "description": "Number of copies available or listed."
+          },
+          "format": {
+            "type": "string",
+            "description": "Format of the media item (e.g., Book, eBook, Audiobook)."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "legacy",
+              "ycl"
+            ],
+            "description": "Source system of the media item."
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Original ID in the source system."
+          },
+          "additionalDetails": {
+            "type": "object",
+            "description": "Additional source-specific details."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "author",
+          "description",
+          "mediaType",
+          "availability",
+          "copies",
+          "format",
+          "source",
+          "sourceId"
+        ]
+      },
+      "EnhancedPageMeta": {
+        "type": "object",
+        "properties": {
+          "currentPage": {
+            "type": "integer",
+            "description": "The current page number being displayed."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "The number of results per page."
+          },
+          "totalResults": {
+            "type": "integer",
+            "description": "The total number of results found for the search query."
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "The total number of pages available for the search results."
+          },
+          "mediaTypeCounts": {
+            "type": "object",
+            "properties": {
+              "physical": {
+                "type": "integer",
+                "description": "Number of physical media results."
+              },
+              "digital": {
+                "type": "integer",
+                "description": "Number of digital media results."
+              }
+            },
+            "required": [
+              "physical",
+              "digital"
+            ]
+          }
+        },
+        "required": [
+          "currentPage",
+          "pageSize",
+          "totalResults",
+          "totalPages",
+          "mediaTypeCounts"
+        ]
+      },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/EnhancedPageMeta"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnifiedResult"
             }
           }
         },
